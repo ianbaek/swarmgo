@@ -517,14 +517,24 @@ func (s *Swarm) handleToolCalls(
 		var args interface{}
 		_ = json.Unmarshal([]byte(toolCall.Function.Arguments), &args)
 
-		// Record the tool result
+		// Determine success based on whether the response content indicates an error
+		responseContent := toolResp.Messages[0].Content
+		isSuccess := !strings.HasPrefix(responseContent, "Error:")
+		var resultError error
+		if !isSuccess {
+			// Extract error message by removing "Error: " prefix
+			errorMsg := strings.TrimPrefix(responseContent, "Error: ")
+			resultError = fmt.Errorf("%s", errorMsg)
+		}
+
+		// Record the tool result with proper success/error status
 		toolResults = append(toolResults, ToolResult{
 			ToolName: toolCall.Function.Name,
 			Args:     args,
 			Result: Result{
-				Success: true,
-				Data:    toolResp.Messages[0].Content,
-				Error:   nil,
+				Success: isSuccess,
+				Data:    responseContent,
+				Error:   resultError,
 				Agent:   toolResp.Agent,
 			},
 		})
@@ -799,14 +809,24 @@ func (s *Swarm) handleToolCallsParallel(
 			var args interface{}
 			_ = json.Unmarshal([]byte(toolCall.Function.Arguments), &args)
 
-			// Add to tool results
+			// Determine success based on whether the response content indicates an error
+			responseContent := result.result.Messages[0].Content
+			isSuccess := !strings.HasPrefix(responseContent, "Error:")
+			var resultError error
+			if !isSuccess {
+				// Extract error message by removing "Error: " prefix
+				errorMsg := strings.TrimPrefix(responseContent, "Error: ")
+				resultError = fmt.Errorf("%s", errorMsg)
+			}
+
+			// Add to tool results with proper success/error status
 			toolResults = append(toolResults, ToolResult{
 				ToolName: toolCall.Function.Name,
 				Args:     args,
 				Result: Result{
-					Success: true,
-					Data:    result.result.Messages[0].Content,
-					Error:   nil,
+					Success: isSuccess,
+					Data:    responseContent,
+					Error:   resultError,
 					Agent:   result.result.Agent,
 				},
 			})
