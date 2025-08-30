@@ -553,7 +553,14 @@ func (s *Swarm) handleToolCalls(
 	}
 
 	// Only try to get follow-up if we executed at least one tool successfully
-	if len(toolResults) > 0 {
+	successfulToolCount := 0
+	for _, tr := range toolResults {
+		if tr.Result.Success {
+			successfulToolCount++
+		}
+	}
+
+	if successfulToolCount > 0 {
 		// CRITICAL FIX: Create a new request with the updated history INCLUDING function results
 		followUpReq := llm.ChatCompletionRequest{
 			Model:    updatedAgent.Model,
